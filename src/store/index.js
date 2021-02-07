@@ -13,8 +13,9 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
     state: {
-        hassUrl: "http://192.168.0.58:8123",
+        hassUrl: "http://192.168.0.132:8123",
         entities: [],
+        connection: null,
     },
     mutations: {
         entities(state, data) {
@@ -23,6 +24,9 @@ export default new Vuex.Store({
                 state.entities.push(data[item]);
             });
         },
+        con(state, data) {
+            state.connection = data;
+        }
     },
     actions: {
         async signIn({ commit, state }) {
@@ -40,6 +44,7 @@ export default new Vuex.Store({
                 });
             }
             const connection = await createConnection({ auth });
+            commit('con', connection)
             subscribeEntities(connection, entities => {
                 console.log(entities);
                 commit('entities', entities);
