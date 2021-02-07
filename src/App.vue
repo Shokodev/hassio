@@ -28,6 +28,6 @@ export default {
   }),
   async created(){
    this.$store.dispatch('signIn');
-  }
+  }, 
 };
 </script>

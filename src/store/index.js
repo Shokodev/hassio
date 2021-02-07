@@ -2,7 +2,7 @@ import Vue from 'vue'
 import Vuex from 'vuex'
 import {
     getAuth,
-    getUser,
+    Auth,
     createConnection,
     subscribeEntities,
 } from "home-assistant-js-websocket";
@@ -13,6 +13,7 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
     state: {
+        hassUrl: "http://192.168.0.58:8123",
         entities: [],
     },
     mutations: {
@@ -24,19 +25,15 @@ export default new Vuex.Store({
         },
     },
     actions: {
-        async signIn({ commit }) {
+        async signIn({ commit, state }) {
             let auth;
-
             try {
-                auth = await getAuth({
-                    loadTokens: () => {
-                        return JSON.parse(localStorage.getItem('auth'))
-                    }
-                });
+                auth = new Auth(JSON.parse(localStorage.getItem('auth')));
+                await auth.refreshAccessToken();
             } catch (err) {
                 console.log(err);
                 auth = await getAuth({
-                    hassUrl: "http://192.168.0.58:8123",
+                    hassUrl: state.hassUrl,
                     saveTokens: (data) => {
                         localStorage.setItem('auth', JSON.stringify(data));
                     }
@@ -46,10 +43,6 @@ export default new Vuex.Store({
             subscribeEntities(connection, entities => {
                 console.log(entities);
                 commit('entities', entities);
-            });
-            getUser(connection).then(user => {
-                console.log("Logged in as", user);
-                window.user = user;
             });
         }
 
