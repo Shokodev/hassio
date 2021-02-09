@@ -13,7 +13,7 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
     state: {
-        hassUrl: "http://192.168.0.132:8123",
+        hassUrl: "http://192.168.0.58:8123",
         entities: [],
         connection: null,
     },
