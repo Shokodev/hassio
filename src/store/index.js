@@ -6,14 +6,14 @@ import {
     createConnection,
     subscribeEntities,
 } from "home-assistant-js-websocket";
-
+import router from '@/router/index'
 
 
 Vue.use(Vuex)
 
 export default new Vuex.Store({
     state: {
-        hassUrl: "http://192.168.0.58:8123",
+        hassUrl: "https://homeassistant.andreas-vogt.ch/",
         entities: [],
         connection: null,
     },
@@ -26,29 +26,38 @@ export default new Vuex.Store({
         },
         con(state, data) {
             state.connection = data;
-        }
+        },
     },
     actions: {
         async signIn({ commit, state }) {
-            let auth;
-            try {
+            let auth = JSON.parse(localStorage.getItem('auth'));
+            if (auth) {
                 auth = new Auth(JSON.parse(localStorage.getItem('auth')));
                 await auth.refreshAccessToken();
-            } catch (err) {
-                console.log(err);
+                localStorage.setItem('auth', JSON.stringify(auth.data));
+                location.search = '';
+                await router.replace('/home');
+            } else {
                 auth = await getAuth({
                     hassUrl: state.hassUrl,
                     saveTokens: (data) => {
                         localStorage.setItem('auth', JSON.stringify(data));
                     }
                 });
+                location.search = '';
+                await router.replace('/home');
             }
             const connection = await createConnection({ auth });
-            commit('con', connection)
+            state.connection = connection;
             subscribeEntities(connection, entities => {
-                console.log(entities);
                 commit('entities', entities);
+                console.log(entities);
             });
+        },
+        async signOut({ state }) {
+            localStorage.removeItem('auth');
+            state.connection = null
+            window.location.replace('/');
         }
 
     },

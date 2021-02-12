@@ -11,7 +11,7 @@
             {{ entity.entity_id }}
           </v-col>
           <v-col>
-            <v-btn @click="collection(entity)">
+            <v-btn @click="loadCollection(entity)">
               Show history
             </v-btn>
           </v-col>
@@ -34,7 +34,7 @@
       <v-card>
         <v-card-title>History last 24h of {{historyData.name}}
           <v-spacer></v-spacer>
-          <v-btn class="warning" @click="historyView = false">close</v-btn>
+          <v-btn class="warning" @click="closeHistoryView()">close</v-btn>
         </v-card-title>
         <v-simple-table>
         <template v-slot:default>
@@ -89,14 +89,18 @@ export default {
         entId.split(".", 1)[0]
       );
     },
-    async collection(entity){
+    async loadCollection(entity){
       this.historyView = true
       let today = new Date();
       let from = new Date(new Date().setDate(new Date().getDate() - 1));
       this.historyData = await History.getHistoryData(from.toISOString(),today.toISOString(),entity.entity_id);
       this.historyData.unit = entity.attributes.unit_of_measurement || "" 
-      this.historyData.name = entity.attributes.friendly_name
+      this.historyData.name = entity.attributes.friendly_name;
     },
+    closeHistoryView(){
+      this.historyData = null;
+      this.historyView = false;
+    }
   },
   computed: {
     getEntities() {
