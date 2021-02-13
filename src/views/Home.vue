@@ -31,52 +31,55 @@
         persistent
         max-width="80%"
       >
-      <v-card>
-        <v-card-title>History last 24h of {{historyData.name}}
-          <v-spacer></v-spacer>
-          <v-btn class="warning" @click="closeHistoryView()">close</v-btn>
-        </v-card-title>
-        <v-simple-table>
-        <template v-slot:default>
-          <thead>
-            <tr>
-              <th class="text-left">
-                Value
-              </th>
-              <th class="text-left">
-                Timestamp
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="item in historyData[0]"
-              :key="item.entity_id"
-            >
-              <td>{{ item.state + " " + historyData.unit}}</td>
-              <td>{{ new Date(item.last_changed).toUTCString() }}</td>
-            </tr>
-          </tbody>
-        </template>
-      </v-simple-table>
-      </v-card>
+        <v-card v-if="historyData">
+          <v-card-title
+            >History last 24h of {{ historyData.name }}
+            <v-spacer></v-spacer>
+            <v-btn class="warning" @click="closeHistoryView()">close</v-btn>
+          </v-card-title>
+          <v-simple-table>
+            <template v-slot:default>
+              <thead>
+                <tr>
+                  <th class="text-left">
+                    Value
+                  </th>
+                  <th class="text-left">
+                    Timestamp
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="item in historyData.data"
+                  v-bind:key="item.last_changed"
+                >
+                  <td>{{ item.state + " " + historyData.unit }}</td>
+                  <td>{{ new Date(item.last_changed).toUTCString() }}</td>
+                </tr>
+              </tbody>
+            </template>
+          </v-simple-table>
+        </v-card>
       </v-dialog>
     </v-container>
   </div>
 </template>
 
 <script>
-import { 
-  callService,
-} from "home-assistant-js-websocket";
+import { callService } from "home-assistant-js-websocket";
 import History from "../history";
 export default {
   name: "Home",
-  data(){
+  data() {
     return {
       historyView: false,
-      historyData:[]
-    }
+      historyData: {
+        data: [],
+        name: "",
+        unit: "",
+      },
+    };
   },
   methods: {
     toggle(entId) {
@@ -84,23 +87,39 @@ export default {
         entity_id: entId,
       });
     },
-    entSplit (entId) {
+    entSplit(entId) {
       return ["switch", "light", "input_boolean"].includes(
         entId.split(".", 1)[0]
       );
     },
-    async loadCollection(entity){
-      this.historyView = true
+    async loadCollection(entity) {
+      this.historyData.data = [];
+      this.historyData.unit = entity.attributes.unit_of_measurement || "";
+      this.historyData.name = entity.attributes.friendly_name || "";
       let today = new Date();
       let from = new Date(new Date().setDate(new Date().getDate() - 1));
-      this.historyData = await History.getHistoryData(from.toISOString(),today.toISOString(),entity.entity_id);
-      this.historyData.unit = entity.attributes.unit_of_measurement || "" 
-      this.historyData.name = entity.attributes.friendly_name;
+      await History.getHistoryData(
+        from.toISOString(),
+        today.toISOString(),
+        entity.entity_id
+      )
+        .then((res) => {
+          this.historyData.data = res[0];
+          this.historyView = true;
+        })
+        .catch((err) => {
+          alert(err);
+          this.closeHistoryView();
+        });
     },
-    closeHistoryView(){
-      this.historyData = null;
-      this.historyView = false;
-    }
+    closeHistoryView() {
+      (this.historyData = {
+        data: [],
+        name: "",
+        unit: "",
+      }),
+        (this.historyView = false);
+    },
   },
   computed: {
     getEntities() {

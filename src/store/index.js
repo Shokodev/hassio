@@ -32,7 +32,7 @@ export default new Vuex.Store({
         async signIn({ commit, state }) {
             let auth = JSON.parse(localStorage.getItem('auth'));
             if (auth) {
-                auth = new Auth(JSON.parse(localStorage.getItem('auth')));
+                auth = new Auth(auth);
                 await auth.refreshAccessToken();
                 localStorage.setItem('auth', JSON.stringify(auth.data));
                 location.search = '';
@@ -48,7 +48,7 @@ export default new Vuex.Store({
                 await router.replace('/home');
             }
             const connection = await createConnection({ auth });
-            state.connection = connection;
+            commit('con', connection);
             subscribeEntities(connection, entities => {
                 commit('entities', entities);
                 console.log(entities);
@@ -56,6 +56,7 @@ export default new Vuex.Store({
         },
         async signOut({ state }) {
             localStorage.removeItem('auth');
+            state.connection.close();
             state.connection = null
             window.location.replace('/');
         }
