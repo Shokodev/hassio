@@ -29,7 +29,7 @@
         v-model="historyView"
         v-if="historyView"
         persistent
-        max-width="80%"
+        max-width="90%"
       >
         <v-card v-if="historyData">
           <v-card-title
@@ -37,29 +37,9 @@
             <v-spacer></v-spacer>
             <v-btn class="warning" @click="closeHistoryView()">close</v-btn>
           </v-card-title>
-          <v-simple-table>
-            <template v-slot:default>
-              <thead>
-                <tr>
-                  <th class="text-left">
-                    Value
-                  </th>
-                  <th class="text-left">
-                    Timestamp
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="item in historyData.data"
-                  v-bind:key="item.last_changed"
-                >
-                  <td>{{ item.state + " " + historyData.unit }}</td>
-                  <td>{{ new Date(item.last_changed).toUTCString() }}</td>
-                </tr>
-              </tbody>
-            </template>
-          </v-simple-table>
+          <div class="ma-2 justify-center">
+            <ApexDateTimeChart v-if="historyData" width="80%" :unit="historyData.unit" :chartdata="historyData.data"></ApexDateTimeChart>  
+          </div>
         </v-card>
       </v-dialog>
     </v-container>
@@ -68,9 +48,13 @@
 
 <script>
 import { callService } from "home-assistant-js-websocket";
-import History from "../history";
+import ApexDateTimeChart from '@/components/ApexDateTimeChart.vue';
+
 export default {
   name: "Home",
+  components: {
+    ApexDateTimeChart,
+   },
   data() {
     return {
       historyView: false,
@@ -93,32 +77,25 @@ export default {
       );
     },
     async loadCollection(entity) {
-      this.historyData.data = [];
-      this.historyData.unit = entity.attributes.unit_of_measurement || "";
-      this.historyData.name = entity.attributes.friendly_name || "";
+      this.historyData = null
       let today = new Date();
-      let from = new Date(new Date().setDate(new Date().getDate() - 1));
-      await History.getHistoryData(
+      let from = new Date(new Date().setHours(new Date().getHours() - 12));
+      await this.$store.state.historyDataManager.getHistoryData(
         from.toISOString(),
         today.toISOString(),
-        entity.entity_id
-      )
-        .then((res) => {
-          this.historyData.data = res[0];
-          this.historyView = true;
-        })
-        .catch((err) => {
-          alert(err);
-          this.closeHistoryView();
+        entity.entity_id,
+        {
+          chartLibrary:"apex",
+        },(data)=>{
+          this.historyData = data
         });
+        this.historyView = true;
+        console.log(this.historyData);
+      
     },
     closeHistoryView() {
-      (this.historyData = {
-        data: [],
-        name: "",
-        unit: "",
-      }),
-        (this.historyView = false);
+      this.historyData = null,
+      this.historyView = false;
     },
   },
   computed: {

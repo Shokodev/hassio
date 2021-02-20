@@ -7,6 +7,7 @@ import {
     subscribeEntities,
 } from "home-assistant-js-websocket";
 import router from '@/router/index'
+import HistoryDataManager from '../history';
 
 
 Vue.use(Vuex)
@@ -16,6 +17,7 @@ export default new Vuex.Store({
         hassUrl: "https://homeassistant.andreas-vogt.ch/",
         entities: [],
         connection: null,
+        historyDataManager: new HistoryDataManager(),
     },
     mutations: {
         entities(state, data) {
